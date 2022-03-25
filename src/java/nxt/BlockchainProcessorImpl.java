@@ -1,6 +1,6 @@
 /*
  * Copyright © 2013-2016 The Nxt Core Developers.
- * Copyright © 2016-2020 Jelurida IP B.V.
+ * Copyright © 2016-2022 Jelurida IP B.V.
  *
  * See the LICENSE.txt file at the top-level directory of this distribution
  * for licensing information.
@@ -963,8 +963,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             if (trimDerivedTables && block.getHeight() % trimFrequency == 0 && !isTrimming) {
                 isTrimming = true;
                 networkService.submit(() -> {
-                    trimDerivedTables();
-                    isTrimming = false;
+                    try {
+                        trimDerivedTables();
+                    } finally {
+                        isTrimming = false;
+                    }
                 });
             }
             if (block.getHeight() % 5000 == 0) {
@@ -1366,7 +1369,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 try {
                     addBlock(block);
                     accept(block, validPhasedTransactions, invalidPhasedTransactions, duplicates);
-
+                    BlockDb.commit(block);
                     Db.db.commitTransaction();
                 } catch (Exception e) {
                     Logger.logInfoMessage("Failed to accept an already validated block", e);
